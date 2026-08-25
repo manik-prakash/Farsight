@@ -1,7 +1,6 @@
 import { bytesToBase64Url, base64UrlToBytes } from "./bytes.js";
 import { RelayError, type DownloadResult, type UploadResult } from "./types.js";
-
-const DEFAULT_TTL_SECONDS = 600; // 10 minutes
+import { DEFAULT_TTL_SECONDS } from "./config.js";
 
 export interface UploadOptions {
   relayUrl: string;

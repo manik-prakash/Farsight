@@ -1,0 +1,177 @@
+# Farsight
+
+**Give a terminal-only or cloud-hosted AI coding agent a way to *see* an
+image, with no SSH tunnel, no shared filesystem, and no server that ever
+sees the plaintext.**
+
+```
+farsight send screenshot.png
+# fs_9eBm-z2xJ4OdESwbgE80Xg.GvchtwqKl7W2qnlUDGGZRIKzdL8f-g4yf9ZLLZ0eyJI
+```
+
+Paste that string into a chat with any MCP-connected agent that has
+`farsight-mcp` registered, and it can fetch, decrypt, and see the image —
+even if that agent is running in a sandboxed cloud environment you only
+talk to through a web UI or PR comments.
+
+## The problem this solves
+
+Desktop chat apps let you drag an image straight into the conversation.
+A coding agent running as a background/cloud session — reached only
+through chat, with no SSH access into its sandbox and no filesystem you
+share with it — has no equivalent. There's no camera into your local
+clipboard or screen from in there.
+
+A few existing tools solve an *adjacent, easier* problem — pasting a
+screenshot into Claude Code **while you have a live SSH session open** to
+the exact machine it's running on:
+
+- [**ccimg/ccimgd**](https://alexanderzeitler.com/articles/paste-clipboard-images-into-claude-code-over-ssh/) —
+  a local clipboard daemon reached over an SSH reverse tunnel
+  (`ssh -R 9998:localhost:9998`) from the remote box.
+- [**Matt Goodrich's Alfred script**](https://mattgoodrich.com/posts/pasting-screenshots-into-a-remote-claude-session/) —
+  hotkey → `screencapture` → `scp` the file to the remote box → paste the
+  remote path into the chat.
+- **clipssh** — same shape, different shell script.
+
+All three need a live, interactive channel *you* control between the two
+specific machines. None of them work when the agent is a genuinely async,
+sandboxed cloud session with outbound HTTPS and nothing else. Farsight is
+built for that harder case specifically.
+
+## How it works
+
+```
+┌────────────────┐        ciphertext only        ┌──────────────────────┐
+│  farsight send  │ ─────────────────────────────▶│   relay (Cloudflare   │
+│  (your laptop)  │                                │  Worker + R2 + DO)    │
+└────────────────┘                                └──────────────────────┘
+        │  prints a reference string                        ▲
+        │  fs_<relay-token>.<key>                            │  HTTPS GET
+        ▼                                                     │  (burns the
+   you paste it into a chat ──────────────────────────────────┘   blob)
+        │
+        ▼
+┌───────────────────┐   fetch_image(reference)   ┌──────────────────┐
+│   your AI agent    │ ──────────────────────────▶│  farsight-mcp     │
+│ (local or cloud,    │◀──────────────────────────│  (runs wherever    │
+│  MCP-connected)     │  MCP ImageContent block     │  the agent lives)  │
+└───────────────────┘                             └──────────────────┘
+```
+
+1. **`farsight send <path>`** reads the image, generates a fresh random
+   XChaCha20-Poly1305 key, encrypts it, and uploads only the ciphertext to
+   the relay. It prints a single reference string —
+   `fs_<relay-token>.<key>` — and the key half **never touches the
+   relay**.
+2. **The relay** (a Cloudflare Worker, with a Durable Object per token for
+   atomic burn-after-read, and R2 for the encrypted bytes) stores the
+   blob briefly and deletes it the instant it's fetched once, or after its
+   TTL expires — whichever comes first. It only ever sees ciphertext,
+   never the key.
+3. **`farsight-mcp`** runs as an MCP server wherever the agent lives — a
+   laptop, a container, a cloud sandbox, anywhere with outbound HTTPS and
+   nothing else needed. Its one tool, `fetch_image`, downloads the blob,
+   decrypts it locally, and returns it as a native MCP `ImageContent`
+   block the agent can see directly in the tool result.
+
+No SSH tunnel, no shared disk, no persistent server-held key. See
+[`docs/RELAY_PROTOCOL.md`](docs/RELAY_PROTOCOL.md) for the exact wire
+contract and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for what the
+zero-knowledge design does and doesn't protect against.
+
+## Quick start
+
+```bash
+npm install
+npm run build
+
+# Send an image (defaults to the public demo relay — self-host for real use)
+node packages/cli/bin/farsight.js send ./screenshot.png
+
+# Register the MCP server with your agent, e.g. Claude Code:
+claude mcp add farsight-mcp -- node ./packages/mcp-server/bin/farsight-mcp.js
+```
+
+Then paste the printed reference into a chat with that agent and ask it to
+fetch and describe the image.
+
+### Self-hosting the relay
+
+```bash
+cd apps/relay-worker
+npx wrangler dev          # local dev, no Cloudflare account needed
+npx wrangler deploy       # deploy to your own Cloudflare account
+```
+
+Point `farsight` and `farsight-mcp` at it with `FARSIGHT_RELAY_URL` (or
+`--relay-url` on the CLI) instead of the public demo instance.
+
+## Tested against
+
+- **Protocol correctness**: verified against
+  [MCP Inspector](https://github.com/modelcontextprotocol/inspector) —
+  `fetch_image` registers with a spec-valid `inputSchema`, and a real
+  `tools/call` round-trip through a locally-running relay
+  (`wrangler dev`) returns a byte-identical, spec-valid
+  `{type: "image", data, mimeType}` block. This is exercised end-to-end:
+  real XChaCha20-Poly1305 encryption, a real Durable Object enforcing
+  atomic burn-after-read, and a real MCP stdio server subprocess.
+- **Whether your specific MCP client actually treats that block as true
+  vision input** is a separate, client-dependent question. MCP's spec is
+  unambiguous that tool results can carry native image content, but real
+  client behavior has been inconsistent in practice — see
+  [`anthropics/claude-code#31208`](https://github.com/anthropics/claude-code/issues/31208)
+  and [`#53256`](https://github.com/anthropics/claude-code/issues/53256)
+  for cases where a client serialized the base64 payload as inert text
+  instead of passing it to the model as vision input. **That's why
+  `fetch_image` always returns a text confirmation alongside the image
+  block** — the tool call reports what happened even on a client where the
+  image itself doesn't render. If you hit this, it's a client-side gap,
+  not a sign the fetch failed; check that GitHub issue for your client's
+  current status before assuming Farsight is broken.
+
+## Non-goals
+
+- **Not a general file-transfer tool.** For that, use
+  [Magic Wormhole](https://github.com/magic-wormhole/magic-wormhole) or
+  [croc](https://github.com/schollz/croc) — both already do this well.
+  Farsight is specifically shaped around handing one image to one MCP
+  tool call.
+- **Not a terminal-graphics tool.** Kitty/iTerm2/Sixel inline image
+  protocols solve a different, purely human-facing problem (rendering a
+  picture inside a terminal emulator for a person to look at) and are out
+  of scope here — see
+  [anthropics/claude-code#2266](https://github.com/anthropics/claude-code/issues/2266)
+  for that specific, still-open feature request.
+
+## Project layout
+
+```
+packages/core/         crypto, reference-string format, relay HTTP client (shared)
+packages/cli/          `farsight` — send/recv commands
+packages/mcp-server/   `farsight-mcp` — the fetch_image MCP tool
+apps/relay-worker/     Cloudflare Worker relay (R2 + Durable Objects)
+docs/                  wire protocol + threat model
+```
+
+Each package has its own test suite (`npm test` at the repo root runs all
+of them). The relay worker's tests run against the real Workers runtime
+(`workerd`) via `@cloudflare/vitest-plugin` — not a mock.
+
+## Roadmap
+
+- [x] **Milestone 1 — MVP**: file-path send, relay, MCP fetch, TTL +
+      burn-after-read, all verified end-to-end.
+- [ ] **Milestone 2**: `farsight watch` — clipboard-watching daemon for
+      one-hotkey capture.
+- [ ] **Milestone 3**: QR-code handoff for phone-photo → terminal.
+- [ ] **Milestone 4** *(design only, deliberately not built)*: a
+      persistent per-agent inbox so the agent polls for new images
+      instead of a human pasting a token each time. Deferred because it
+      changes the trust model — a longer-lived inbox ID needs its own
+      access control story that a one-time burn-after-read token doesn't.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

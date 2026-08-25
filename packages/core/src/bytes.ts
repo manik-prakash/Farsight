@@ -1,10 +1,14 @@
 /** Platform-agnostic base64url helpers (Node, Cloudflare Workers, and browsers all provide atob/btoa globally). */
 
-export function bytesToBase64Url(bytes: Uint8Array): string {
+/** Standard (non-url-safe) base64, e.g. for the MCP ImageContent `data` field. */
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  const base64 = btoa(binary);
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary);
+}
+
+export function bytesToBase64Url(bytes: Uint8Array): string {
+  return bytesToBase64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function base64UrlToBytes(b64url: string): Uint8Array {
