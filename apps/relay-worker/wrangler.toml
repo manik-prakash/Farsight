@@ -1,0 +1,20 @@
+name = "farsight-relay"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Public demo relay defaults. Anyone self-hosting should treat these as a
+# starting point, not a promise: TTL and bucket/namespace names are theirs
+# to change. See docs/RELAY_PROTOCOL.md for the contract this must satisfy.
+
+[[durable_objects.bindings]]
+name = "TOKENS"
+class_name = "TokenObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TokenObject"]
+
+[[r2_buckets]]
+binding = "BLOBS"
+bucket_name = "farsight-blobs"
