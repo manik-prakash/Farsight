@@ -25,6 +25,17 @@ export default {
 };
 
 async function handleUpload(request: Request, env: Env): Promise<Response> {
+  // "unknown" groups every local-dev/no-header request into one bucket,
+  // which is fine off-production — cf-connecting-ip is always set on the
+  // real edge, which is the only place this limit actually matters.
+  const clientIp = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const { success } = await env.UPLOAD_LIMITER.limit({ key: clientIp });
+  if (!success) {
+    return new Response("rate limit exceeded — too many uploads from this address, try again shortly", {
+      status: 429,
+    });
+  }
+
   const nonce = request.headers.get("x-farsight-nonce");
   const mimeType = request.headers.get("x-farsight-mime-type");
   const ttlHeader = request.headers.get("x-farsight-ttl");

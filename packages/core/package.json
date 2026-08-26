@@ -1,12 +1,16 @@
 {
   "name": "@farsight/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "description": "Shared crypto, reference-string format, and relay HTTP client for Farsight.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
@@ -18,5 +22,25 @@
   "devDependencies": {
     "typescript": "^5.7.0",
     "vitest": "^4.1.0"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manik-prakash/farsight.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/manik-prakash/farsight#readme",
+  "bugs": "https://github.com/manik-prakash/farsight/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai-agent",
+    "encryption",
+    "xchacha20-poly1305"
+  ],
+  "author": "Manik Prakash",
+  "license": "MIT"
 }

@@ -4,7 +4,10 @@ import { describe, it, expect } from "vitest";
 const NONCE_B64URL = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; // 24 zero bytes, base64url — content is irrelevant to the relay, it's opaque ciphertext framing
 const CIPHERTEXT = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
 
-async function upload(ttlSeconds = 600, mimeType = "image/png") {
+// The rate limiter's storage persists for the whole test file, keyed on
+// cf-connecting-ip. Every test except the rate-limit test itself gets its
+// own random IP so a burst in one test can't exhaust another test's quota.
+async function upload(ttlSeconds = 600, mimeType = "image/png", ip = crypto.randomUUID()) {
   const res = await SELF.fetch("https://relay.test/v1/blob", {
     method: "POST",
     headers: {
@@ -12,6 +15,7 @@ async function upload(ttlSeconds = 600, mimeType = "image/png") {
       "x-farsight-nonce": NONCE_B64URL,
       "x-farsight-mime-type": mimeType,
       "x-farsight-ttl": String(ttlSeconds),
+      "cf-connecting-ip": ip,
     },
     body: CIPHERTEXT,
   });
@@ -86,6 +90,17 @@ describe("Farsight relay worker", () => {
       body: new Uint8Array(0),
     });
     expect(res.status).toBe(400);
+  });
+
+  it("rate-limits uploads from the same client past the configured burst (20/60s in wrangler.toml)", async () => {
+    const ip = crypto.randomUUID();
+    const results = await Promise.all(Array.from({ length: 25 }, () => upload(600, "image/png", ip)));
+    const statuses = results.map((r) => r.status);
+    const okCount = statuses.filter((s) => s === 200).length;
+    const limitedCount = statuses.filter((s) => s === 429).length;
+    expect(okCount).toBeLessThanOrEqual(20);
+    expect(limitedCount).toBeGreaterThan(0);
+    expect(okCount + limitedCount).toBe(25);
   });
 
   it("issues a different token for every upload", async () => {

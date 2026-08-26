@@ -1,22 +1,48 @@
 {
-  "name": "farsight",
-  "version": "0.1.0",
+  "name": "@farsight/cli",
+  "version": "0.2.0",
+  "description": "farsight: encrypt and relay an image to an MCP-connected AI agent with no shared filesystem or SSH tunnel required.",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "farsight": "./bin/farsight.js"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@farsight/core": "*",
+    "@farsight/core": "^0.2.0",
     "commander": "^15.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
     "vitest": "^4.1.0"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manik-prakash/farsight.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/manik-prakash/farsight#readme",
+  "bugs": "https://github.com/manik-prakash/farsight/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "ai-agent",
+    "screenshot",
+    "cli"
+  ],
+  "author": "Manik Prakash",
+  "license": "MIT"
 }

@@ -39,6 +39,14 @@ client-supplied) and must not itself leak the decryption key.
 headers, empty body, oversized body). Body content is not part of the
 contract; clients only rely on the status code.
 
+**Response — 429**: too many uploads from this client recently. The
+reference implementation limits uploads (not downloads) to 20 per 60
+seconds per client IP, so the public relay can't be used as free anonymous
+encrypted blob storage. This is an implementation detail of
+`apps/relay-worker`, not part of the contract itself — a different backend
+may rate-limit differently or not at all, as long as it returns a non-2xx,
+non-404/410 status when it does.
+
 ## `GET /v1/blob/:token`
 
 Fetches and **permanently deletes** the blob in one atomic operation

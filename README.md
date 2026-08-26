@@ -68,7 +68,8 @@ built for that harder case specifically.
    atomic burn-after-read, and R2 for the encrypted bytes) stores the
    blob briefly and deletes it the instant it's fetched once, or after its
    TTL expires — whichever comes first. It only ever sees ciphertext,
-   never the key.
+   never the key. Uploads are rate-limited per IP (20/60s by default) so
+   the public relay can't double as free anonymous blob storage.
 3. **`farsight-mcp`** runs as an MCP server wherever the agent lives — a
    laptop, a container, a cloud sandbox, anywhere with outbound HTTPS and
    nothing else needed. Its one tool, `fetch_image`, downloads the blob,
@@ -82,6 +83,16 @@ zero-knowledge design does and doesn't protect against.
 
 ## Quick start
 
+Once published to npm (`@farsight/cli`, `@farsight/mcp-server`):
+
+```bash
+npx @farsight/cli send ./screenshot.png
+
+claude mcp add farsight-mcp -- npx -y @farsight/mcp-server
+```
+
+Until then, run from a source checkout:
+
 ```bash
 npm install
 npm run build
@@ -93,8 +104,43 @@ node packages/cli/bin/farsight.js send ./screenshot.png
 claude mcp add farsight-mcp -- node ./packages/mcp-server/bin/farsight-mcp.js
 ```
 
-Then paste the printed reference into a chat with that agent and ask it to
-fetch and describe the image.
+Either way, paste the printed reference into a chat with that agent and ask
+it to fetch and describe the image.
+
+## Demo
+
+A real terminal session, captured against a local `wrangler dev` relay
+(not the deployed public one — this project hasn't been deployed for real
+yet; see the Roadmap). No animated GIF here: this was built on a Windows
+box with no headless screen-recording path available, and a staged one
+would misrepresent the tool — this is unedited, real command output.
+
+```
+$ farsight send ./error-screenshot.png --relay-url http://127.0.0.1:8787
+fs_Bq9V6FNMnhwKHlpP6oIoQA.aGxWU4QpVaC59TGAxN5GP5d2sQ_MhuBZ9VpjBAu9zlk
+(image/png, 68 bytes, expires in 600s if unfetched)
+
+$ # paste the reference into an MCP-connected agent's chat, or call the
+$ # tool directly (this is what MCP Inspector's tools/call sends back):
+{
+  "result": {
+    "content": [
+      { "type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ...", "mimeType": "image/png" },
+      { "type": "text", "text": "Fetched and decrypted a 68-byte image/png image via Farsight. If no image appeared above this text, your MCP client isn't rendering the image content block as real vision input for the model..." }
+    ]
+  }
+}
+
+$ # the same reference again — burn-after-read means it's gone:
+{
+  "result": {
+    "content": [
+      { "type": "text", "text": "this image was already fetched once and Farsight deleted it (burn-after-read) — ask for a fresh reference" }
+    ],
+    "isError": true
+  }
+}
+```
 
 ### Self-hosting the relay
 
@@ -163,6 +209,13 @@ of them). The relay worker's tests run against the real Workers runtime
 
 - [x] **Milestone 1 — MVP**: file-path send, relay, MCP fetch, TTL +
       burn-after-read, all verified end-to-end.
+- [ ] **v2 — ship-readiness** (in progress): scoped npm names
+      (`@farsight/*`, since the unscoped `farsight` was already taken),
+      publish metadata, and per-IP upload rate limiting are done. Still
+      blocked on: an actual Cloudflare deploy (currently `wrangler dev`
+      only), publishing the three packages to npm, pushing this repo to
+      GitHub, and one real-client vision check (see "Tested against"
+      above — still unverified against a live model as of this writing).
 - [ ] **Milestone 2**: `farsight watch` — clipboard-watching daemon for
       one-hotkey capture.
 - [ ] **Milestone 3**: QR-code handoff for phone-photo → terminal.
