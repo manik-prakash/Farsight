@@ -1,10 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { DEFAULT_RELAY_URL } from "@farsight/core";
+import { resolveRelayUrl } from "@farsight/core";
 import { fetchImage } from "./tools/fetchImage.js";
 
-export function createServer(relayUrl: string = process.env.FARSIGHT_RELAY_URL ?? DEFAULT_RELAY_URL): McpServer {
+export function createServer(relayUrl: string = resolveRelayUrl()): McpServer {
   const server = new McpServer({ name: "farsight-mcp", version: "0.1.0" });
 
   server.registerTool(

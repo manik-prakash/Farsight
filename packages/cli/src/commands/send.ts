@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { encrypt, encodeReference, uploadBlob, DEFAULT_RELAY_URL, DEFAULT_TTL_SECONDS } from "@farsight/core";
+import { encrypt, encodeReference, uploadBlob, resolveRelayUrl, DEFAULT_TTL_SECONDS } from "@farsight/core";
 import { mimeTypeForPath } from "../mimeType.js";
 
 export interface SendOptions {
@@ -24,7 +24,7 @@ export async function send(imagePath: string, options: SendOptions = {}): Promis
   const plaintext = await readFile(imagePath);
   const { ciphertext, nonce, key } = encrypt(new Uint8Array(plaintext));
 
-  const relayUrl = options.relayUrl ?? DEFAULT_RELAY_URL;
+  const relayUrl = resolveRelayUrl(options.relayUrl);
   const ttlSeconds = options.ttlSeconds ?? DEFAULT_TTL_SECONDS;
 
   const { relayToken } = await uploadBlob({ relayUrl, ciphertext, nonce, mimeType, ttlSeconds });

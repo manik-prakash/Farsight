@@ -9,7 +9,7 @@ export function buildProgram(): Command {
   program
     .command("send <imagePath>")
     .description("Encrypt and upload an image; prints a one-time reference string to paste into an agent chat.")
-    .option("--relay-url <url>", "override the relay URL (defaults to FARSIGHT_RELAY_URL or the public demo relay)")
+    .option("--relay-url <url>", "override the relay URL (otherwise FARSIGHT_RELAY_URL, then the built-in default)")
     .option("--ttl <seconds>", "how long the blob may sit unfetched before it expires", (v) => parseInt(v, 10))
     .action(async (imagePath: string, opts: { relayUrl?: string; ttl?: number }) => {
       const result = await send(imagePath, { relayUrl: opts.relayUrl, ttlSeconds: opts.ttl });

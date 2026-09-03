@@ -1,5 +1,5 @@
 import { writeFile } from "node:fs/promises";
-import { decodeReference, decrypt, downloadBlob, DEFAULT_RELAY_URL } from "@farsight/core";
+import { decodeReference, decrypt, downloadBlob, resolveRelayUrl } from "@farsight/core";
 
 export interface RecvOptions {
   relayUrl?: string;
@@ -19,7 +19,7 @@ export interface RecvResult {
  */
 export async function recv(reference: string, outputPath: string, options: RecvOptions = {}): Promise<RecvResult> {
   const { relayToken, key } = decodeReference(reference);
-  const relayUrl = options.relayUrl ?? DEFAULT_RELAY_URL;
+  const relayUrl = resolveRelayUrl(options.relayUrl);
   const blob = await downloadBlob({ relayUrl, relayToken });
   const plaintext = decrypt(blob.ciphertext, blob.nonce, key);
   await writeFile(outputPath, plaintext);

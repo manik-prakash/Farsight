@@ -44,3 +44,35 @@ describe("recv command", () => {
     expect(downloadBlob).not.toHaveBeenCalled();
   });
 });
+
+describe("recv relay URL resolution", () => {
+  let dir: string;
+  let reference: string;
+  const original = process.env.FARSIGHT_RELAY_URL;
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), "farsight-recv-env-test-"));
+    downloadBlob.mockReset();
+    const { ciphertext, nonce, key } = core.encrypt(new TextEncoder().encode("x"));
+    downloadBlob.mockResolvedValue({ ciphertext, nonce, mimeType: "image/png" });
+    reference = core.encodeReference("tok_xyz", key);
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+    if (original === undefined) delete process.env.FARSIGHT_RELAY_URL;
+    else process.env.FARSIGHT_RELAY_URL = original;
+  });
+
+  it("downloads from FARSIGHT_RELAY_URL when no explicit relayUrl is given", async () => {
+    process.env.FARSIGHT_RELAY_URL = "https://self-hosted.example";
+    await recv(reference, join(dir, "out.png"));
+    expect(downloadBlob.mock.calls[0][0].relayUrl).toBe("https://self-hosted.example");
+  });
+
+  it("lets an explicit relayUrl win over the environment", async () => {
+    process.env.FARSIGHT_RELAY_URL = "https://self-hosted.example";
+    await recv(reference, join(dir, "out.png"), { relayUrl: "https://flag.example" });
+    expect(downloadBlob.mock.calls[0][0].relayUrl).toBe("https://flag.example");
+  });
+});
