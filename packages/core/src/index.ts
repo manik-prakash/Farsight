@@ -4,3 +4,4 @@ export { uploadBlob, downloadBlob, type UploadOptions, type DownloadOptions } fr
 export { RelayError, type RelayErrorCode, type UploadResult, type DownloadResult } from "./types.js";
 export { bytesToBase64, bytesToBase64Url, base64UrlToBytes, randomBytes } from "./bytes.js";
 export { DEFAULT_RELAY_URL, DEFAULT_TTL_SECONDS, resolveRelayUrl } from "./config.js";
+export { loadDotEnv } from "./env-file.js";

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { resolveRelayUrl } from "@farsight/core";
+import { loadDotEnv, resolveRelayUrl } from "@farsight/core";
 import { fetchImage } from "./tools/fetchImage.js";
 
 export function createServer(relayUrl: string = resolveRelayUrl()): McpServer {
@@ -27,6 +27,11 @@ export function createServer(relayUrl: string = resolveRelayUrl()): McpServer {
 }
 
 export async function main(): Promise<void> {
+  // Note that the MCP client chooses this process's working directory, so a
+  // .env is only picked up if the agent happens to launch us from the
+  // directory holding it. Setting the variable in the MCP client's own
+  // server config is the reliable route.
+  loadDotEnv();
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
