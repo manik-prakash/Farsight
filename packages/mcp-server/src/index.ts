@@ -5,7 +5,7 @@ import { loadDotEnv, resolveRelayUrl } from "@farsight/core";
 import { fetchImage } from "./tools/fetchImage.js";
 
 export function createServer(relayUrl: string = resolveRelayUrl()): McpServer {
-  const server = new McpServer({ name: "farsight-mcp", version: "0.1.0" });
+  const server = new McpServer({ name: "farsight-mcp", version: "0.2.0" });
 
   server.registerTool(
     "fetch_image",
