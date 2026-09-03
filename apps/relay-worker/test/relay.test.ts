@@ -1,4 +1,4 @@
-import { SELF } from "cloudflare:test";
+import { SELF, env, runInDurableObject } from "cloudflare:test";
 import { describe, it, expect } from "vitest";
 
 const NONCE_B64URL = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; // 24 zero bytes, base64url — content is irrelevant to the relay, it's opaque ciphertext framing
@@ -110,4 +110,115 @@ describe("Farsight relay worker", () => {
     const { token: tokenB } = (await b.json()) as { token: string };
     expect(tokenA).not.toBe(tokenB);
   });
+});
+
+describe("Farsight relay worker — Durable Object blob storage", () => {
+  // Vitest's toEqual walks typed arrays element by element, which on a
+  // multi-megabyte blob costs more than the round trip itself and makes the
+  // test load-sensitive. Compare directly and report the offending index.
+  function firstMismatch(actual: Uint8Array, expected: Uint8Array): number {
+    if (actual.byteLength !== expected.byteLength) return -2;
+    for (let i = 0; i < actual.byteLength; i++) {
+      if (actual[i] !== expected[i]) return i;
+    }
+    return -1;
+  }
+
+  // crypto.getRandomValues() refuses buffers over 64 KiB, so fill in slices.
+  function randomBytes(byteLength: number): Uint8Array {
+    const out = new Uint8Array(byteLength);
+    for (let offset = 0; offset < byteLength; offset += 65536) {
+      crypto.getRandomValues(out.subarray(offset, Math.min(offset + 65536, byteLength)));
+    }
+    return out;
+  }
+
+  // Ciphertext is stored as 1 MiB chunks because Durable Object storage
+  // caps a key and value at 2 MB combined, so anything over that size is
+  // the only thing exercising the split/reassemble path.
+  async function uploadBytes(bytes: Uint8Array) {
+    return SELF.fetch("https://relay.test/v1/blob", {
+      method: "POST",
+      headers: {
+        "content-type": "application/octet-stream",
+        "x-farsight-nonce": NONCE_B64URL,
+        "x-farsight-mime-type": "image/png",
+        "x-farsight-ttl": "600",
+        "cf-connecting-ip": crypto.randomUUID(),
+      },
+      body: bytes,
+    });
+  }
+
+  it("round-trips a multi-chunk blob byte-for-byte", async () => {
+    // 2.5 MiB spans three chunks, with a final partial one.
+    const original = randomBytes(2.5 * 1024 * 1024);
+
+    const uploadRes = await uploadBytes(original);
+    expect(uploadRes.status).toBe(200);
+    const { token } = (await uploadRes.json()) as { token: string };
+
+    const downloadRes = await SELF.fetch(`https://relay.test/v1/blob/${token}`);
+    expect(downloadRes.status).toBe(200);
+    const returned = new Uint8Array(await downloadRes.arrayBuffer());
+    expect(returned.byteLength).toBe(original.byteLength);
+    expect(firstMismatch(returned, original)).toBe(-1);
+  }, 15_000);
+
+  it("rejects a blob over the 10 MB cap", async () => {
+    const res = await uploadBytes(new Uint8Array(10 * 1024 * 1024 + 1));
+    expect(res.status).toBe(400);
+  });
+
+  it("actually frees the stored chunks on burn, not just the consumed flag", async () => {
+    const original = randomBytes(2.5 * 1024 * 1024);
+    const uploadRes = await uploadBytes(original);
+    const { token } = (await uploadRes.json()) as { token: string };
+
+    const id = env.TOKENS.idFromName(token);
+    const stub = env.TOKENS.get(id);
+
+    const before = await runInDurableObject(stub, async (_instance, state) => {
+      return [...(await state.storage.list({ prefix: "chunk:" })).keys()].length;
+    });
+    expect(before).toBe(3);
+
+    expect((await SELF.fetch(`https://relay.test/v1/blob/${token}`)).status).toBe(200);
+
+    // The metadata tombstone must survive (it's what makes a second fetch a
+    // 410 rather than a 404), but the ciphertext itself must be gone.
+    const after = await runInDurableObject(stub, async (_instance, state) => {
+      return {
+        chunks: [...(await state.storage.list({ prefix: "chunk:" })).keys()].length,
+        meta: await state.storage.get("meta"),
+      };
+    });
+    expect(after.chunks).toBe(0);
+    expect(after.meta).toMatchObject({ consumed: true });
+  }, 15_000);
+
+  it("frees stored chunks when the TTL expires without a fetch", async () => {
+    const original = randomBytes(2.5 * 1024 * 1024);
+    const res = await SELF.fetch("https://relay.test/v1/blob", {
+      method: "POST",
+      headers: {
+        "content-type": "application/octet-stream",
+        "x-farsight-nonce": NONCE_B64URL,
+        "x-farsight-mime-type": "image/png",
+        "x-farsight-ttl": "1",
+        "cf-connecting-ip": crypto.randomUUID(),
+      },
+      body: original,
+    });
+    const { token } = (await res.json()) as { token: string };
+
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    expect((await SELF.fetch(`https://relay.test/v1/blob/${token}`)).status).toBe(404);
+
+    const stub = env.TOKENS.get(env.TOKENS.idFromName(token));
+    const remaining = await runInDurableObject(stub, async (_instance, state) => {
+      return [...(await state.storage.list()).keys()].length;
+    });
+    expect(remaining).toBe(0);
+  }, 15_000);
 });

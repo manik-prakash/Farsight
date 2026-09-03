@@ -3,9 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Public demo relay defaults. Anyone self-hosting should treat these as a
-# starting point, not a promise: TTL and bucket/namespace names are theirs
-# to change. See docs/RELAY_PROTOCOL.md for the contract this must satisfy.
+# Defaults for a self-hosted relay; treat them as a starting point, not a
+# promise. Ciphertext lives in the Durable Object's own storage rather than
+# an object store, so this Worker needs no paid Cloudflare service. See
+# docs/RELAY_PROTOCOL.md for the contract this must satisfy.
 
 [[durable_objects.bindings]]
 name = "TOKENS"
@@ -15,11 +16,7 @@ class_name = "TokenObject"
 tag = "v1"
 new_sqlite_classes = ["TokenObject"]
 
-[[r2_buckets]]
-binding = "BLOBS"
-bucket_name = "farsight-blobs"
-
-# Per-IP upload throttle so the public demo relay can't be used as free
+# Per-IP upload throttle so an exposed relay can't be used as free
 # anonymous encrypted blob storage. Downloads are intentionally not
 # rate-limited here — burn-after-read and short TTLs already bound how much
 # a given upload can be abused, and legitimate agents may retry a fetch.

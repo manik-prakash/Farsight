@@ -1,9 +1,12 @@
-import { TokenObject, type ClaimResult } from "./tokenObject.js";
+import { TokenObject } from "./tokenObject.js";
 import type { Env } from "./types.js";
 
 export { TokenObject };
 
-const MAX_BLOB_BYTES = 25 * 1024 * 1024; // generous headroom over a typical screenshot
+// Sized against the Workers free plan rather than an object store: each
+// upload becomes ceil(size / 1 MiB) Durable Object row writes, and the free
+// plan allows 100k row writes/day. Comfortably above a typical screenshot.
+const MAX_BLOB_BYTES = 10 * 1024 * 1024;
 const MIN_TTL_SECONDS = 1;
 const MAX_TTL_SECONDS = 24 * 60 * 60; // 1 day
 
@@ -56,14 +59,19 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   }
 
   const relayToken = randomToken();
-  await env.BLOBS.put(relayToken, body);
-
   const stub = env.TOKENS.get(env.TOKENS.idFromName(relayToken));
-  await stub.fetch("https://token/store", {
+  const stored = await stub.fetch("https://token/store", {
     method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ relayToken, nonce, mimeType, ttlSeconds }),
+    headers: {
+      "x-farsight-nonce": nonce,
+      "x-farsight-mime-type": mimeType,
+      "x-farsight-ttl": String(ttlSeconds),
+    },
+    body,
   });
+  if (!stored.ok) {
+    return new Response("failed to store blob", { status: 500 });
+  }
 
   return new Response(JSON.stringify({ token: relayToken }), {
     status: 200,
@@ -79,17 +87,13 @@ async function handleDownload(relayToken: string, env: Env): Promise<Response> {
   if (claimRes.status === 410) return new Response(null, { status: 410 });
   if (!claimRes.ok) return new Response(null, { status: 500 });
 
-  const { nonce, mimeType } = (await claimRes.json()) as ClaimResult;
-  const object = await env.BLOBS.get(relayToken);
-  if (!object) {
-    // The DO says this token was valid and unclaimed, but the R2 object is
-    // gone — treat as not found rather than serving an empty/broken body.
-    return new Response(null, { status: 404 });
+  const nonce = claimRes.headers.get("x-farsight-nonce");
+  const mimeType = claimRes.headers.get("x-farsight-mime-type");
+  if (!nonce || !mimeType) {
+    return new Response(null, { status: 500 });
   }
-  const body = await object.arrayBuffer();
-  await env.BLOBS.delete(relayToken);
 
-  return new Response(body, {
+  return new Response(claimRes.body, {
     status: 200,
     headers: {
       "content-type": "application/octet-stream",
