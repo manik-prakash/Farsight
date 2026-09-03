@@ -32,15 +32,21 @@ dumb, untrusted bulletin board, not a party you need to trust with content.
   it somewhere public first.
 - **Traffic analysis by the relay operator.** The relay can correlate
   upload/download timing and blob sizes even though it can't read content.
-  If that matters for your use case, self-host the relay (see
-  `apps/relay-node`, future work) rather than using the public demo
-  instance.
+  If that matters for your use case, run your own relay
+  (`apps/relay-worker`) rather than one operated by someone else — it
+  runs entirely within the Cloudflare Workers free plan and needs no paid
+  service.
 - **Availability.** Burn-after-read means a lost or dropped download is
   gone — there is no retry. This is a deliberate trade-off (matching Magic
   Wormhole), not an oversight; re-send if a fetch fails partway.
-- **Denial of service against the relay.** The public demo relay has no
-  rate limiting beyond Cloudflare's platform defaults. Don't rely on it for
-  anything you can't afford to have someone else exhaust.
+- **Denial of service against the relay.** Uploads are rate-limited per
+  IP (20/60s by default, see the `[[ratelimits]]` binding in
+  `apps/relay-worker/wrangler.toml`), which stops the relay being used as
+  free anonymous blob storage but is not a serious anti-DoS measure.
+  Downloads are deliberately not rate-limited: burn-after-read and short
+  TTLs already bound how much any one upload can be abused, and a
+  legitimate agent may need to retry a fetch. An operator exposing a relay
+  publicly should not rely on these defaults alone.
 
 ## Why XChaCha20-Poly1305 with a random key, not sealed-box public-key crypto
 

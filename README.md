@@ -44,7 +44,7 @@ built for that harder case specifically.
 ```
 ┌────────────────┐        ciphertext only        ┌──────────────────────┐
 │  farsight send  │ ─────────────────────────────▶│   relay (Cloudflare   │
-│  (your laptop)  │                                │  Worker + R2 + DO)    │
+│  (your laptop)  │                                │  Worker + DO storage) │
 └────────────────┘                                └──────────────────────┘
         │  prints a reference string                        ▲
         │  fs_<relay-token>.<key>                            │  HTTPS GET
@@ -64,12 +64,14 @@ built for that harder case specifically.
    the relay. It prints a single reference string —
    `fs_<relay-token>.<key>` — and the key half **never touches the
    relay**.
-2. **The relay** (a Cloudflare Worker, with a Durable Object per token for
-   atomic burn-after-read, and R2 for the encrypted bytes) stores the
-   blob briefly and deletes it the instant it's fetched once, or after its
-   TTL expires — whichever comes first. It only ever sees ciphertext,
-   never the key. Uploads are rate-limited per IP (20/60s by default) so
-   the public relay can't double as free anonymous blob storage.
+2. **The relay** (a Cloudflare Worker, with a Durable Object per token
+   holding both the encrypted bytes and the burn-after-read state)
+   stores the blob briefly and deletes it the instant it's fetched once,
+   or after its TTL expires — whichever comes first. It only ever sees
+   ciphertext, never the key. Uploads are rate-limited per IP (20/60s by
+   default) so an exposed relay can't double as free anonymous blob
+   storage. Keeping the bytes in the Durable Object rather than an object
+   store is what lets the relay run entirely on Cloudflare's free plan.
 3. **`farsight-mcp`** runs as an MCP server wherever the agent lives — a
    laptop, a container, a cloud sandbox, anywhere with outbound HTTPS and
    nothing else needed. Its one tool, `fetch_image`, downloads the blob,
@@ -97,7 +99,7 @@ Until then, run from a source checkout:
 npm install
 npm run build
 
-# Send an image (defaults to the public demo relay — self-host for real use)
+# Send an image (set FARSIGHT_RELAY_URL first — see "Running your own relay")
 node packages/cli/bin/farsight.js send ./screenshot.png
 
 # Register the MCP server with your agent, e.g. Claude Code:
@@ -109,24 +111,24 @@ it to fetch and describe the image.
 
 ## Demo
 
-A real terminal session, captured against a local `wrangler dev` relay
-(not the deployed public one — this project hasn't been deployed for real
-yet; see the Roadmap). No animated GIF here: this was built on a Windows
-box with no headless screen-recording path available, and a staged one
-would misrepresent the tool — this is unedited, real command output.
+A real terminal session against a deployed Cloudflare relay. No animated
+GIF here: this was built on a Windows box with no headless
+screen-recording path available, and a staged one would misrepresent the
+tool — this is unedited, real command output, with the relay subdomain
+redacted.
 
 ```
-$ farsight send ./error-screenshot.png --relay-url http://127.0.0.1:8787
-fs_Bq9V6FNMnhwKHlpP6oIoQA.aGxWU4QpVaC59TGAxN5GP5d2sQ_MhuBZ9VpjBAu9zlk
-(image/png, 68 bytes, expires in 600s if unfetched)
+$ farsight send ./small.png    # a 1x1 PNG, kept tiny so the output stays readable
+fs_CQtwWPaZzmxLRo33gwTd5w.L9Ik0IGBS6W04VzFFyFnUkFZ1oKjwEMx_zxb3_4hQhM
+(image/png, 70 bytes, expires in 600s if unfetched)
 
 $ # paste the reference into an MCP-connected agent's chat, or call the
-$ # tool directly (this is what MCP Inspector's tools/call sends back):
+$ # tool directly — this is what a tools/call round trip returns:
 {
   "result": {
     "content": [
       { "type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ...", "mimeType": "image/png" },
-      { "type": "text", "text": "Fetched and decrypted a 68-byte image/png image via Farsight. If no image appeared above this text, your MCP client isn't rendering the image content block as real vision input for the model..." }
+      { "type": "text", "text": "Fetched and decrypted a 70-byte image/png image via Farsight. If no image appeared above this text, your MCP client isn't rendering the image content block as real vision input for the model..." }
     ]
   }
 }
@@ -142,40 +144,74 @@ $ # the same reference again — burn-after-read means it's gone:
 }
 ```
 
-### Self-hosting the relay
+### Running your own relay
+
+There is no public Farsight relay — `DEFAULT_RELAY_URL` in
+`packages/core/src/config.ts` is a placeholder that does not resolve, so
+running your own is currently the only way to use Farsight.
 
 ```bash
 cd apps/relay-worker
-npx wrangler dev          # local dev, no Cloudflare account needed
-npx wrangler deploy       # deploy to your own Cloudflare account
+npx wrangler dev      # local dev, no Cloudflare account needed
+
+npx wrangler login    # deploy: authenticate once
+npx wrangler deploy   # -> https://farsight-relay.<subdomain>.workers.dev
 ```
 
-Point `farsight` and `farsight-mcp` at it with `FARSIGHT_RELAY_URL` (or
-`--relay-url` on the CLI) instead of the public demo instance.
+**The relay runs entirely within the Cloudflare Workers free plan.** There
+is no object store and no bucket to create: ciphertext lives in the same
+per-token Durable Object that enforces burn-after-read, stored as 1 MiB
+chunks under Durable Object storage'''s 2 MB-per-value limit. That keeps the
+whole system on free-tier services — R2 would have required linking a
+payment method even to stay inside its free tier.
+
+The free plan'''s ceilings are the practical limits: 5 GB of total Durable
+Object storage, 100k requests/day, and 100k row writes/day. Farsight caps
+a single image at **10 MB** (10 chunks) accordingly.
+
+Point both ends at the result with `FARSIGHT_RELAY_URL`, either as a shell
+variable or in a `.env` file (copy `.env.example`; `.env` is gitignored):
+
+```bash
+cp .env.example .env    # then edit in your relay URL
+farsight send ./screenshot.png
+```
+
+Precedence is `--relay-url` > a real environment variable > `.env` > the
+built-in default. A `.env` never overrides a variable you set explicitly,
+so a forgotten file can't silently redirect an upload.
+
+The MCP server reads the same variable, so set it in the environment the
+**agent** runs in — that is a different machine from your laptop whenever
+the agent is in a container or cloud sandbox.
 
 ## Tested against
 
 - **Protocol correctness**: verified against
-  [MCP Inspector](https://github.com/modelcontextprotocol/inspector) —
-  `fetch_image` registers with a spec-valid `inputSchema`, and a real
-  `tools/call` round-trip through a locally-running relay
-  (`wrangler dev`) returns a byte-identical, spec-valid
-  `{type: "image", data, mimeType}` block. This is exercised end-to-end:
-  real XChaCha20-Poly1305 encryption, a real Durable Object enforcing
-  atomic burn-after-read, and a real MCP stdio server subprocess.
-- **Whether your specific MCP client actually treats that block as true
-  vision input** is a separate, client-dependent question. MCP's spec is
-  unambiguous that tool results can carry native image content, but real
-  client behavior has been inconsistent in practice — see
+  [MCP Inspector](https://github.com/modelcontextprotocol/inspector) and by
+  driving the stdio server directly — `fetch_image` registers with a
+  spec-valid `inputSchema`, and a real `tools/call` round trip through the
+  **deployed** Cloudflare relay returns a byte-identical, spec-valid
+  `{type: "image", data, mimeType}` block. Exercised end-to-end against
+  live infrastructure: real XChaCha20-Poly1305 encryption, a real Durable
+  Object enforcing atomic burn-after-read, chunked storage proven with a
+  2.5 MB blob spanning three chunks, and TTL expiry.
+- **Vision input**: confirmed on **Claude Code 2.1.259 (Windows),
+  2026-09-03**. A fresh session given only a reference string fetched the
+  image and reported the exact random UUID rendered in it — content it had
+  no way to infer, so a plausible-sounding hallucination could not have
+  matched. That client passes the image block to the model as genuine
+  vision input.
+- **Other MCP clients remain unverified.** MCP's spec is unambiguous that
+  tool results can carry native image content, but real client behavior has
+  been inconsistent — see
   [`anthropics/claude-code#31208`](https://github.com/anthropics/claude-code/issues/31208)
   and [`#53256`](https://github.com/anthropics/claude-code/issues/53256)
   for cases where a client serialized the base64 payload as inert text
-  instead of passing it to the model as vision input. **That's why
-  `fetch_image` always returns a text confirmation alongside the image
-  block** — the tool call reports what happened even on a client where the
-  image itself doesn't render. If you hit this, it's a client-side gap,
-  not a sign the fetch failed; check that GitHub issue for your client's
-  current status before assuming Farsight is broken.
+  instead. **That's why `fetch_image` always returns a text confirmation
+  alongside the image block** — the tool call reports what happened even on
+  a client where the image itself doesn't render. If you hit this, it's a
+  client-side gap, not a sign the fetch failed.
 
 ## Non-goals
 
@@ -211,11 +247,11 @@ of them). The relay worker's tests run against the real Workers runtime
       burn-after-read, all verified end-to-end.
 - [ ] **v2 — ship-readiness** (in progress): scoped npm names
       (`@farsight/*`, since the unscoped `farsight` was already taken),
-      publish metadata, and per-IP upload rate limiting are done. Still
-      blocked on: an actual Cloudflare deploy (currently `wrangler dev`
-      only), publishing the three packages to npm, pushing this repo to
-      GitHub, and one real-client vision check (see "Tested against"
-      above — still unverified against a live model as of this writing).
+      publish metadata, per-IP upload rate limiting, a real Cloudflare
+      deploy, and the real-client vision check are done — the relay runs on
+      the Workers free plan with no object store, and an MCP-connected
+      agent has been confirmed to actually see a relayed image. Still open:
+      publishing the three packages to npm and pushing this repo to GitHub.
 - [ ] **Milestone 2**: `farsight watch` — clipboard-watching daemon for
       one-hotkey capture.
 - [ ] **Milestone 3**: QR-code handoff for phone-photo → terminal.
