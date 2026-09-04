@@ -1,6 +1,6 @@
 {
   "name": "farsight-core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared crypto, reference-string format, and relay HTTP client for Farsight.",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,6 +42,9 @@
     "encryption",
     "xchacha20-poly1305"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "author": "Manik Prakash",
   "license": "MIT"
 }

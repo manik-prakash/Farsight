@@ -1,6 +1,6 @@
 {
   "name": "farsight-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "farsight-mcp: the MCP server exposing fetch_image, so an agent anywhere with outbound HTTPS can see an image sent via the farsight CLI.",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,6 +44,9 @@
     "vision",
     "screenshot"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "author": "Manik Prakash",
   "license": "MIT"
 }

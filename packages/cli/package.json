@@ -1,6 +1,6 @@
 {
   "name": "farsight-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "farsight: encrypt and relay an image to an MCP-connected AI agent with no shared filesystem or SSH tunnel required.",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,6 +42,9 @@
     "screenshot",
     "cli"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "author": "Manik Prakash",
   "license": "MIT"
 }
