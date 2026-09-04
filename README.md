@@ -161,11 +161,11 @@ npx wrangler deploy   # -> https://farsight-relay.<subdomain>.workers.dev
 **The relay runs entirely within the Cloudflare Workers free plan.** There
 is no object store and no bucket to create: ciphertext lives in the same
 per-token Durable Object that enforces burn-after-read, stored as 1 MiB
-chunks under Durable Object storage'''s 2 MB-per-value limit. That keeps the
+chunks under Durable Object storage's 2 MB-per-value limit. That keeps the
 whole system on free-tier services — R2 would have required linking a
 payment method even to stay inside its free tier.
 
-The free plan'''s ceilings are the practical limits: 5 GB of total Durable
+The free plan's ceilings are the practical limits: 5 GB of total Durable
 Object storage, 100k requests/day, and 100k row writes/day. Farsight caps
 a single image at **10 MB** (10 chunks) accordingly.
 
@@ -237,7 +237,7 @@ sandbox.
 packages/core/         crypto, reference-string format, relay HTTP client (shared)
 packages/cli/          `farsight` — send/recv commands
 packages/mcp-server/   `farsight-mcp` — the fetch_image MCP tool
-apps/relay-worker/     Cloudflare Worker relay (R2 + Durable Objects)
+apps/relay-worker/     Cloudflare Worker relay (Durable Objects, no object store)
 docs/                  wire protocol + threat model
 ```
 
