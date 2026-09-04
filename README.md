@@ -181,9 +181,13 @@ Precedence is `--relay-url` > a real environment variable > `.env` > the
 built-in default. A `.env` never overrides a variable you set explicitly,
 so a forgotten file can't silently redirect an upload.
 
-The MCP server reads the same variable, so set it in the environment the
-**agent** runs in — that is a different machine from your laptop whenever
-the agent is in a container or cloud sandbox.
+The MCP server reads the same environment variable but **not** `.env` files.
+Its working directory is chosen by the MCP client, not by you, so a `.env`
+found there could be one you never wrote — and it could point the agent at
+someone else's relay. Set the variable in the client's own server config
+instead, in the environment the **agent** runs in; that is a different
+machine from your laptop whenever the agent is in a container or cloud
+sandbox.
 
 ## Tested against
 

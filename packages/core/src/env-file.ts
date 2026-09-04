@@ -9,6 +9,11 @@
  * `.env` would silently redirect uploads to the wrong relay.
  *
  * A missing or unreadable `.env` is not an error; there simply isn't one.
+ *
+ * Only call this where the working directory is the user's own choice, which
+ * in practice means the CLI. The MCP server deliberately does not call it:
+ * its cwd is picked by the MCP client, so a `.env` found there could be one
+ * the user never chose and could redirect the relay out from under them.
  */
 export function loadDotEnv(): void {
   if (typeof process === "undefined" || typeof process.loadEnvFile !== "function") return;

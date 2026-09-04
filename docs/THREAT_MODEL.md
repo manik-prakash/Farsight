@@ -20,6 +20,20 @@ It can never observe:
 This mirrors Magic Wormhole and Firefox Send's trust model: the relay is a
 dumb, untrusted bulletin board, not a party you need to trust with content.
 
+A relay also cannot **substitute** content. Serving different bytes for a
+token fails the Poly1305 tag on the client, so `fetch_image` returns a
+decryption error rather than an image. That matters more than confidentiality
+here: the fetched image lands in an agent's context, so a relay that could
+swap in an attacker-chosen image would be a prompt-injection channel. It
+can't. The worst a hostile or wrongly-configured relay achieves is refusing
+to serve, or learning the metadata listed above.
+
+Because of that, `farsight-mcp` is deliberately strict about where its relay
+URL comes from: it reads `FARSIGHT_RELAY_URL` from its environment and
+ignores `.env` files entirely, since the MCP client — not the user — chooses
+its working directory. The CLI, whose working directory *is* the user's
+shell, does read `.env`.
+
 ## What Farsight does NOT protect against
 
 - **A compromised endpoint.** If the machine running `farsight send` or the
