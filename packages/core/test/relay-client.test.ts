@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { uploadBlob, downloadBlob } from "../src/relay-client.js";
 import { RelayError } from "../src/types.js";
+import { DEFAULT_RELAY_URL } from "../src/config.js";
 import { bytesToBase64Url } from "../src/bytes.js";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -115,5 +116,50 @@ describe("downloadBlob", () => {
       });
     });
     await downloadBlob({ relayUrl: "https://relay.example", relayToken: "tok/with/slash", fetchImpl: fetchImpl as unknown as typeof fetch });
+  });
+});
+
+describe("unreachable relays", () => {
+  // Without this handling the caller sees Node's bare "fetch failed", which
+  // tells a first-time user nothing about the thing they actually have to do.
+  const offline = () => {
+    throw new TypeError("fetch failed");
+  };
+
+  it("names the missing configuration when the URL is still the built-in default", async () => {
+    const promise = uploadBlob({
+      relayUrl: DEFAULT_RELAY_URL,
+      ciphertext: new Uint8Array([1]),
+      nonce: new Uint8Array(24),
+      mimeType: "image/png",
+      fetchImpl: offline as unknown as typeof fetch,
+    });
+
+    await expect(promise).rejects.toMatchObject({ code: "unreachable" });
+    await expect(promise).rejects.toThrow(/no relay configured/);
+    await expect(promise).rejects.toThrow(/FARSIGHT_RELAY_URL/);
+  });
+
+  it("names the URL and the cause when a configured relay is unreachable", async () => {
+    const promise = downloadBlob({
+      relayUrl: "https://relay.example",
+      relayToken: "tok",
+      fetchImpl: offline as unknown as typeof fetch,
+    });
+
+    await expect(promise).rejects.toMatchObject({ code: "unreachable" });
+    await expect(promise).rejects.toThrow(/could not reach the relay at https:\/\/relay\.example/);
+    await expect(promise).rejects.toThrow(/fetch failed/);
+    // A real relay URL must not be blamed on missing configuration.
+    await expect(promise).rejects.not.toThrow(/no relay configured/);
+  });
+
+  it("leaves HTTP-level failures classified as before", async () => {
+    // A relay that answers 404 is reachable; only transport failures are
+    // "unreachable", or the burn-after-read messages would get swallowed.
+    const fetchImpl = vi.fn(async () => new Response(null, { status: 404 }));
+    await expect(
+      downloadBlob({ relayUrl: "https://relay.example", relayToken: "tok", fetchImpl: fetchImpl as unknown as typeof fetch }),
+    ).rejects.toMatchObject({ code: "not_found" });
   });
 });

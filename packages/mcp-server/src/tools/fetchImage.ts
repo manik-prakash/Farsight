@@ -96,6 +96,10 @@ function relayErrorMessage(err: RelayError): string {
       return "no image found for this reference — it may have already expired (Farsight blobs have a short TTL)";
     case "consumed":
       return "this image was already fetched once and Farsight deleted it (burn-after-read) — ask for a fresh reference";
+    case "unreachable":
+      // Already a complete, actionable sentence (see reachRelay in
+      // @farsight/core) — prefixing it would only bury the instruction.
+      return err.message;
     default:
       return `relay error: ${err.message}`;
   }
