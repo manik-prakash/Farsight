@@ -1,11 +1,30 @@
+import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { resolveRelayUrl } from "farsight-core";
 import { fetchImage } from "./tools/fetchImage.js";
 
+/**
+ * The version this server announces in its MCP handshake, read from the
+ * package manifest rather than written out here.
+ *
+ * A literal drifted twice: 9b39d57 corrected a stale one, and the very next
+ * version bump made it stale again, so 0.2.1 shipped announcing 0.2.0.
+ * Reading the manifest removes the second place that has to be remembered.
+ * `src/` and `dist/` both sit one level under the package root, so this
+ * resolves to the same file whether running from source or from a build.
+ */
+export const SERVER_VERSION: string = readPackageVersion();
+
+function readPackageVersion(): string {
+  const manifest = new URL("../package.json", import.meta.url);
+  const { version } = JSON.parse(readFileSync(manifest, "utf8")) as { version: string };
+  return version;
+}
+
 export function createServer(relayUrl: string = resolveRelayUrl()): McpServer {
-  const server = new McpServer({ name: "farsight-mcp", version: "0.2.0" });
+  const server = new McpServer({ name: "farsight-mcp", version: SERVER_VERSION });
 
   server.registerTool(
     "fetch_image",
