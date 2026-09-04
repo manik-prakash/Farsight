@@ -1,11 +1,16 @@
 # Farsight
 
+[![farsight-cli](https://img.shields.io/npm/v/farsight-cli?label=farsight-cli)](https://www.npmjs.com/package/farsight-cli)
+[![farsight-mcp](https://img.shields.io/npm/v/farsight-mcp?label=farsight-mcp)](https://www.npmjs.com/package/farsight-mcp)
+[![farsight-core](https://img.shields.io/npm/v/farsight-core?label=farsight-core)](https://www.npmjs.com/package/farsight-core)
+[![license](https://img.shields.io/npm/l/farsight-cli)](LICENSE)
+
 **Give a terminal-only or cloud-hosted AI coding agent a way to *see* an
 image, with no SSH tunnel, no shared filesystem, and no server that ever
 sees the plaintext.**
 
 ```
-farsight send screenshot.png
+npx farsight-cli send screenshot.png
 # fs_9eBm-z2xJ4OdESwbgE80Xg.GvchtwqKl7W2qnlUDGGZRIKzdL8f-g4yf9ZLLZ0eyJI
 ```
 
@@ -85,29 +90,35 @@ zero-knowledge design does and doesn't protect against.
 
 ## Quick start
 
-Once published to npm (`farsight-cli`, `farsight-mcp`):
+**First deploy a relay** — there is no public one, and nothing works without
+it. That is the only step needing this repository; see
+[Running your own relay](#running-your-own-relay) below. Keep the URL
+`wrangler` prints.
+
+Then both halves come from npm:
 
 ```bash
-npx farsight-cli send ./screenshot.png
+# On your machine — encrypt and upload, print a one-time reference
+FARSIGHT_RELAY_URL=https://farsight-relay.<your-subdomain>.workers.dev   npx farsight-cli send ./screenshot.png
 
-claude mcp add farsight-mcp -- npx -y farsight-mcp
+# Where the agent runs — register the MCP server. --env is required:
+# farsight-mcp deliberately ignores .env files.
+claude mcp add farsight-mcp   --env FARSIGHT_RELAY_URL=https://farsight-relay.<your-subdomain>.workers.dev   -- npx -y farsight-mcp
 ```
 
-Until then, run from a source checkout:
+Paste the printed reference into a chat with that agent and ask it to fetch
+and describe the image.
+
+Working on Farsight itself rather than using it? Run the same two halves from
+a checkout:
 
 ```bash
 npm install
 npm run build
 
-# Send an image (set FARSIGHT_RELAY_URL first — see "Running your own relay")
 node packages/cli/bin/farsight.js send ./screenshot.png
-
-# Register the MCP server with your agent, e.g. Claude Code:
 claude mcp add farsight-mcp -- node ./packages/mcp-server/bin/farsight-mcp.js
 ```
-
-Either way, paste the printed reference into a chat with that agent and ask
-it to fetch and describe the image.
 
 ## Demo
 
@@ -234,10 +245,11 @@ sandbox.
 ## Project layout
 
 ```
-packages/core/         crypto, reference-string format, relay HTTP client (shared)
-packages/cli/          `farsight` — send/recv commands
-packages/mcp-server/   `farsight-mcp` — the fetch_image MCP tool
-apps/relay-worker/     Cloudflare Worker relay (Durable Objects, no object store)
+packages/core/         farsight-core  crypto, reference format, relay client (shared)
+packages/cli/          farsight-cli   the `farsight` send/recv commands
+packages/mcp-server/   farsight-mcp   the fetch_image MCP tool
+apps/relay-worker/     (not published) Cloudflare Worker relay, Durable Objects only
+apps/web/              (not published) the project site
 docs/                  wire protocol + threat model
 ```
 
@@ -249,14 +261,12 @@ of them). The relay worker's tests run against the real Workers runtime
 
 - [x] **Milestone 1 — MVP**: file-path send, relay, MCP fetch, TTL +
       burn-after-read, all verified end-to-end.
-- [ ] **v2 — ship-readiness** (in progress): scoped npm names
-      (`farsight-cli`, `farsight-mcp`, `farsight-core` — plain `farsight`
-      was already taken by an unrelated package),
-      publish metadata, per-IP upload rate limiting, a real Cloudflare
-      deploy, and the real-client vision check are done — the relay runs on
-      the Workers free plan with no object store, and an MCP-connected
-      agent has been confirmed to actually see a relayed image. Still open:
-      publishing the three packages to npm and pushing this repo to GitHub.
+- [x] **v2 — ship-readiness**: published to npm as `farsight-cli`,
+      `farsight-mcp` and `farsight-core` (unscoped — plain `farsight` was
+      already taken by an unrelated package), with per-IP upload rate
+      limiting, a real Cloudflare deploy on the Workers free plan with no
+      object store, and the real-client vision check done: an MCP-connected
+      agent has been confirmed to actually see a relayed image.
 - [ ] **Milestone 2**: `farsight watch` — clipboard-watching daemon for
       one-hotkey capture.
 - [ ] **Milestone 3**: QR-code handoff for phone-photo → terminal.
