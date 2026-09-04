@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/*
+ * A terminal-leaning dark theme. Farsight is a command-line tool that talks to
+ * agents in sandboxes, so the site reads as a console rather than a product
+ * page: near-black ground, one green accent for things the tool emits, one
+ * amber for things it warns about.
+ */
+@theme {
+  --color-ink-950: #08090b;
+  --color-ink-900: #0b0d10;
+  --color-ink-850: #101317;
+  --color-ink-800: #161a20;
+  --color-ink-700: #232830;
+  --color-ink-600: #333a45;
+  --color-ink-400: #737d8c;
+  --color-ink-300: #9aa4b2;
+  --color-ink-200: #c7cdd6;
+  --color-ink-100: #e6e9ee;
+
+  --color-signal-400: #7ee787;
+  --color-signal-500: #4ac26b;
+  --color-signal-600: #2ea043;
+
+  --color-warn-400: #e3b341;
+  --color-danger-400: #f0776c;
+
+  --font-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Consolas,
+    monospace;
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ink-900 text-ink-200 font-sans antialiased;
+}
+
+/* Selection picks up the accent so copied reference strings read as "output". */
+::selection {
+  background: var(--color-signal-600);
+  color: var(--color-ink-950);
+}
+
+/* Focus ring: visible on the dark ground, and never suppressed. */
+:where(a, button, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-signal-400);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+ * Markdown rendered from the repo's real .md files. Tailwind's typography
+ * plugin ships light-mode defaults, so the palette is remapped here rather
+ * than fought with utility overrides at every call site.
+ */
+.prose-farsight {
+  @apply prose prose-invert max-w-none;
+
+  --tw-prose-body: var(--color-ink-200);
+  --tw-prose-headings: var(--color-ink-100);
+  --tw-prose-lead: var(--color-ink-300);
+  --tw-prose-links: var(--color-signal-400);
+  --tw-prose-bold: var(--color-ink-100);
+  --tw-prose-counters: var(--color-ink-400);
+  --tw-prose-bullets: var(--color-ink-600);
+  --tw-prose-hr: var(--color-ink-700);
+  --tw-prose-quotes: var(--color-ink-200);
+  --tw-prose-quote-borders: var(--color-signal-600);
+  --tw-prose-captions: var(--color-ink-400);
+  --tw-prose-code: var(--color-signal-400);
+  --tw-prose-pre-code: var(--color-ink-200);
+  --tw-prose-pre-bg: var(--color-ink-950);
+  --tw-prose-th-borders: var(--color-ink-600);
+  --tw-prose-td-borders: var(--color-ink-700);
+}
+
+.prose-farsight :where(code):not(:where(pre code)) {
+  @apply bg-ink-800 border-ink-700 rounded border px-1.5 py-0.5 text-[0.85em] font-normal;
+}
+
+/* The typography plugin adds backticks around inline code; we have a border. */
+.prose-farsight :where(code):not(:where(pre code))::before,
+.prose-farsight :where(code):not(:where(pre code))::after {
+  content: none;
+}
+
+.prose-farsight :where(pre) {
+  @apply border-ink-700 rounded-lg border;
+}
+
+/*
+ * The README's ASCII diagrams are load-bearing: they only line up in a
+ * monospace font at a fixed size, and they must scroll rather than wrap.
+ */
+.prose-farsight :where(pre code) {
+  @apply text-[0.8rem] leading-relaxed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
