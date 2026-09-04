@@ -15,5 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Typechecking resolves @farsight/core through its exports map, which
+      # points at ./dist -- so the workspaces have to be built first.
+      - run: npm run build
       - run: npm run typecheck --workspaces --if-present
       - run: npm run test --workspaces --if-present
