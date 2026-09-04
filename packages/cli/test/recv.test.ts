@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const downloadBlob = vi.fn();
-vi.mock("@farsight/core", async () => {
-  const actual = await vi.importActual<typeof import("@farsight/core")>("@farsight/core");
+vi.mock("farsight-core", async () => {
+  const actual = await vi.importActual<typeof import("farsight-core")>("farsight-core");
   return { ...actual, downloadBlob: (...args: unknown[]) => downloadBlob(...args) };
 });
 
-const core = await import("@farsight/core");
+const core = await import("farsight-core");
 const { recv } = await import("../src/commands/recv.js");
 
 describe("recv command", () => {

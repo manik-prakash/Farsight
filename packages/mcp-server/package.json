@@ -1,5 +1,5 @@
 {
-  "name": "@farsight/mcp-server",
+  "name": "farsight-mcp",
   "version": "0.2.0",
   "description": "farsight-mcp: the MCP server exposing fetch_image, so an agent anywhere with outbound HTTPS can see an image sent via the farsight CLI.",
   "type": "module",
@@ -20,16 +20,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@farsight/core": "^0.2.0",
+    "farsight-core": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
     "vitest": "^4.1.0"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "repository": {
     "type": "git",

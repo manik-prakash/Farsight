@@ -1,13 +1,13 @@
-# @farsight/core
+# farsight-core
 
 Shared internals for [Farsight](https://github.com/manik-prakash/farsight):
 encryption, the reference-string format, and the relay HTTP client.
 
 **You probably want one of the other two packages instead:**
 
-- [`@farsight/cli`](https://www.npmjs.com/package/@farsight/cli) — `farsight
+- [`farsight-cli`](https://www.npmjs.com/package/farsight-cli) — `farsight
   send`, the command you run on your own machine
-- [`@farsight/mcp-server`](https://www.npmjs.com/package/@farsight/mcp-server) —
+- [`farsight-mcp`](https://www.npmjs.com/package/farsight-mcp) —
   the `fetch_image` MCP tool, which runs where the agent lives
 
 This package exists so those two agree on the wire format and the crypto rather

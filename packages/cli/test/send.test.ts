@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const uploadBlob = vi.fn();
-vi.mock("@farsight/core", async () => {
-  const actual = await vi.importActual<typeof import("@farsight/core")>("@farsight/core");
+vi.mock("farsight-core", async () => {
+  const actual = await vi.importActual<typeof import("farsight-core")>("farsight-core");
   return { ...actual, uploadBlob: (...args: unknown[]) => uploadBlob(...args) };
 });
 

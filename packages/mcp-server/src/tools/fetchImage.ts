@@ -5,7 +5,7 @@ import {
   bytesToBase64,
   RelayError,
   ReferenceFormatError,
-} from "@farsight/core";
+} from "farsight-core";
 
 export interface FetchImageDeps {
   relayUrl: string;
@@ -98,7 +98,7 @@ function relayErrorMessage(err: RelayError): string {
       return "this image was already fetched once and Farsight deleted it (burn-after-read) — ask for a fresh reference";
     case "unreachable":
       // Already a complete, actionable sentence (see reachRelay in
-      // @farsight/core) — prefixing it would only bury the instruction.
+      // farsight-core) — prefixing it would only bury the instruction.
       return err.message;
     default:
       return `relay error: ${err.message}`;

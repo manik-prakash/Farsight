@@ -85,12 +85,12 @@ zero-knowledge design does and doesn't protect against.
 
 ## Quick start
 
-Once published to npm (`@farsight/cli`, `@farsight/mcp-server`):
+Once published to npm (`farsight-cli`, `farsight-mcp`):
 
 ```bash
-npx @farsight/cli send ./screenshot.png
+npx farsight-cli send ./screenshot.png
 
-claude mcp add farsight-mcp -- npx -y @farsight/mcp-server
+claude mcp add farsight-mcp -- npx -y farsight-mcp
 ```
 
 Until then, run from a source checkout:
@@ -250,7 +250,8 @@ of them). The relay worker's tests run against the real Workers runtime
 - [x] **Milestone 1 — MVP**: file-path send, relay, MCP fetch, TTL +
       burn-after-read, all verified end-to-end.
 - [ ] **v2 — ship-readiness** (in progress): scoped npm names
-      (`@farsight/*`, since the unscoped `farsight` was already taken),
+      (`farsight-cli`, `farsight-mcp`, `farsight-core` — plain `farsight`
+      was already taken by an unrelated package),
       publish metadata, per-IP upload rate limiting, a real Cloudflare
       deploy, and the real-client vision check are done — the relay runs on
       the Workers free plan with no object store, and an MCP-connected

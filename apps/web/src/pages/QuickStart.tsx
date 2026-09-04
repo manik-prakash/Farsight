@@ -93,9 +93,9 @@ farsight send ./screenshot.png`}
         </p>
         <CodeBlock
           label="from npm"
-          code={`npx @farsight/cli send ./screenshot.png
+          code={`npx farsight-cli send ./screenshot.png
 
-claude mcp add farsight-mcp -- npx -y @farsight/mcp-server`}
+claude mcp add farsight-mcp -- npx -y farsight-mcp`}
         />
 
         <p className="text-ink-300 mt-8 mb-6 leading-relaxed">

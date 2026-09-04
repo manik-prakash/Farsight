@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { fetchImage } from "../src/tools/fetchImage.js";
-import { encrypt, encodeReference, RelayError, bytesToBase64 } from "@farsight/core";
+import { encrypt, encodeReference, RelayError, bytesToBase64 } from "farsight-core";
 
 describe("fetchImage tool", () => {
   it("decrypts a fetched blob and returns an image content block plus text", async () => {

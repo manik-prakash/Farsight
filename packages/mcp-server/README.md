@@ -1,4 +1,4 @@
-# @farsight/mcp-server
+# farsight-mcp
 
 **The MCP server that lets an AI agent see an image sent from someone else's
 machine.**
@@ -14,7 +14,7 @@ actually see.
 ```bash
 claude mcp add farsight-mcp \
   --env FARSIGHT_RELAY_URL=https://farsight-relay.<your-subdomain>.workers.dev \
-  -- npx -y @farsight/mcp-server
+  -- npx -y farsight-mcp
 ```
 
 Or, for any MCP client that takes a JSON config:
@@ -24,7 +24,7 @@ Or, for any MCP client that takes a JSON config:
   "mcpServers": {
     "farsight-mcp": {
       "command": "npx",
-      "args": ["-y", "@farsight/mcp-server"],
+      "args": ["-y", "farsight-mcp"],
       "env": { "FARSIGHT_RELAY_URL": "https://farsight-relay.<your-subdomain>.workers.dev" }
     }
   }
@@ -90,7 +90,7 @@ See the [threat model](https://github.com/manik-prakash/farsight/blob/main/docs/
 
 ## See also
 
-- [`@farsight/cli`](https://www.npmjs.com/package/@farsight/cli) — the `farsight
+- [`farsight-cli`](https://www.npmjs.com/package/farsight-cli) — the `farsight
   send` command that produces the reference string
 - [Project repository](https://github.com/manik-prakash/farsight)
 

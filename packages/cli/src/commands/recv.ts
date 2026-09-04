@@ -1,5 +1,5 @@
 import { writeFile } from "node:fs/promises";
-import { decodeReference, decrypt, downloadBlob, resolveRelayUrl } from "@farsight/core";
+import { decodeReference, decrypt, downloadBlob, resolveRelayUrl } from "farsight-core";
 
 export interface RecvOptions {
   relayUrl?: string;

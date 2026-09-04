@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { loadDotEnv } from "@farsight/core";
+import { loadDotEnv } from "farsight-core";
 import { buildProgram } from "../dist/index.js";
 
 // Picks up FARSIGHT_RELAY_URL from a .env in the working directory, without

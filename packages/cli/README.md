@@ -1,14 +1,14 @@
-# @farsight/cli
+# farsight-cli
 
 **Send an image to an AI coding agent that has no other way to receive one.**
 
 ```bash
-npx @farsight/cli send screenshot.png
+npx farsight-cli send screenshot.png
 # fs_9eBm-z2xJ4OdESwbgE80Xg.GvchtwqKl7W2qnlUDGGZRIKzdL8f-g4yf9ZLLZ0eyJI
 ```
 
 Paste that string into a chat with any MCP-connected agent that has
-[`@farsight/mcp-server`](https://www.npmjs.com/package/@farsight/mcp-server)
+[`farsight-mcp`](https://www.npmjs.com/package/farsight-mcp)
 registered, and it can fetch, decrypt, and see the image — even when that agent
 runs in a sandboxed cloud environment you only reach through a web UI or PR
 comments.
@@ -30,7 +30,7 @@ Cloudflare Workers free plan, with no object store and no bucket to create. See
 ## Install
 
 ```bash
-npm install -g @farsight/cli   # or use npx, as above
+npm install -g farsight-cli   # or use npx, as above
 ```
 
 Requires Node 20 or newer.
@@ -84,7 +84,7 @@ and [relay protocol](https://github.com/manik-prakash/farsight/blob/main/docs/RE
 
 ## See also
 
-- [`@farsight/mcp-server`](https://www.npmjs.com/package/@farsight/mcp-server) —
+- [`farsight-mcp`](https://www.npmjs.com/package/farsight-mcp) —
   the other half; runs where the agent lives
 - [Project repository](https://github.com/manik-prakash/farsight)
 

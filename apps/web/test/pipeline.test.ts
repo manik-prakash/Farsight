@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { decodeReference, decrypt } from '@farsight/core'
+import { decodeReference, decrypt } from 'farsight-core'
 import {
   RELAY_TOKEN_BYTES,
   firstMismatch,

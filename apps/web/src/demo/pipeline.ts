@@ -5,7 +5,7 @@ import {
   encodeReference,
   encrypt,
   randomBytes,
-} from '@farsight/core'
+} from 'farsight-core'
 
 /**
  * The relay issues 16 random bytes, base64url-encoded, as a blob token
@@ -37,7 +37,7 @@ export interface PipelineResult {
 
 /**
  * The full client-side half of a `farsight send` / `fetch_image` cycle, using
- * the same @farsight/core functions the CLI and MCP server call. Everything
+ * the same farsight-core functions the CLI and MCP server call. Everything
  * here is pure and offline: no relay, no network, no persistence.
  *
  * The decrypt step deliberately goes through `decodeReference` rather than

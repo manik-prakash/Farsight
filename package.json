@@ -7,8 +7,8 @@
     "apps/*"
   ],
   "scripts": {
-    "//": "npm runs workspaces alphabetically, which puts cli before core. Everything depends on @farsight/core, and its exports map resolves to ./dist, so core is built first explicitly.",
-    "build": "npm run build -w @farsight/core && npm run build --workspaces --if-present",
+    "//": "npm runs workspaces alphabetically, which puts cli before core. Everything depends on farsight-core, and its exports map resolves to ./dist, so core is built first explicitly.",
+    "build": "npm run build -w farsight-core && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

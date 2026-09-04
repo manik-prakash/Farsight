@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { encrypt, encodeReference, uploadBlob, resolveRelayUrl, DEFAULT_TTL_SECONDS } from "@farsight/core";
+import { encrypt, encodeReference, uploadBlob, resolveRelayUrl, DEFAULT_TTL_SECONDS } from "farsight-core";
 import { mimeTypeForPath } from "../mimeType.js";
 
 export interface SendOptions {

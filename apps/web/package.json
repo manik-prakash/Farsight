@@ -1,5 +1,5 @@
 {
-  "name": "@farsight/web",
+  "name": "farsight-web",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@farsight/core": "^0.2.0",
+    "farsight-core": "^0.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",

@@ -64,7 +64,7 @@ export default function Demo() {
         lead={
           <>
             This page imports the real{' '}
-            <code className="text-signal-400">@farsight/core</code> — the same
+            <code className="text-signal-400">farsight-core</code> — the same
             module the CLI and the MCP server call. Drop in an image and it runs
             the actual encryption, assembles a real reference string, and
             decrypts it back.
