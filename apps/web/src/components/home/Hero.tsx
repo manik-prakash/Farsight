@@ -25,7 +25,7 @@ export function Hero() {
         <div className="mt-10 max-w-2xl">
           <Terminal
             lines={[
-              { command: 'farsight send screenshot.png' },
+              { command: 'npx farsight-cli send screenshot.png' },
               {
                 output:
                   'fs_9eBm-z2xJ4OdESwbgE80Xg.GvchtwqKl7W2qnlUDGGZRIKzdL8f-g4yf9ZLLZ0eyJI',

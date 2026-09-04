@@ -33,6 +33,8 @@ export interface PackageCard {
   summary: string
   /** Runtime dependencies, read from the real package.json. */
   dependencies: string[]
+  /** npm page, for the workspaces that are actually published. */
+  npmUrl?: string
 }
 
 /** Runtime dependency names, if the manifest declares any — the relay worker has none. */
@@ -40,6 +42,19 @@ function deps(pkg: object): string[] {
   const dependencies = 'dependencies' in pkg ? pkg.dependencies : undefined
   if (typeof dependencies !== 'object' || dependencies === null) return []
   return Object.keys(dependencies).sort()
+}
+
+/**
+ * npm page for a package, or undefined when the manifest marks it private.
+ *
+ * Read from `private` rather than a list of published names kept here: the
+ * relay worker is private today, and anything that changes status should
+ * change this page by itself.
+ */
+function npmUrl(pkg: object): string | undefined {
+  if ('private' in pkg && pkg.private === true) return undefined
+  const name = 'name' in pkg && typeof pkg.name === 'string' ? pkg.name : undefined
+  return name ? `https://www.npmjs.com/package/${name}` : undefined
 }
 
 /**
@@ -54,6 +69,7 @@ export const packages: PackageCard[] = [
     summary:
       'Encryption, the reference-string format, and the relay HTTP client. Shared by every other package, and browser-safe — this site runs it directly.',
     dependencies: deps(corePkg),
+    npmUrl: npmUrl(corePkg),
   },
   {
     name: cliPkg.name,
@@ -63,6 +79,7 @@ export const packages: PackageCard[] = [
     summary:
       'The command you run on your own machine. `send` encrypts and uploads; `recv` fetches and decrypts.',
     dependencies: deps(cliPkg),
+    npmUrl: npmUrl(cliPkg),
   },
   {
     name: mcpPkg.name,
@@ -72,6 +89,7 @@ export const packages: PackageCard[] = [
     summary:
       'The MCP server that runs wherever the agent lives. One tool, `fetch_image`, returning a native image content block.',
     dependencies: deps(mcpPkg),
+    npmUrl: npmUrl(mcpPkg),
   },
   {
     name: relayPkg.name,
@@ -80,5 +98,6 @@ export const packages: PackageCard[] = [
     summary:
       'The Cloudflare Worker. Stores ciphertext in a per-token Durable Object and deletes it on first read.',
     dependencies: deps(relayPkg),
+    npmUrl: npmUrl(relayPkg),
   },
 ]

@@ -15,7 +15,7 @@ export function TechStack() {
     <Section
       id="stack"
       title="What it's built from"
-      lead="Four workspaces in one repo. The names and versions below are read from the packages' own manifests at build time."
+      lead="Four workspaces in one repo. Names, versions, dependencies and whether a package is published are all read from its own manifest at build time."
     >
       <div className="space-y-3">
         {packages.map((pkg) => (
@@ -37,6 +37,18 @@ export function TechStack() {
                 <span className="border-ink-700 text-ink-300 rounded border px-1.5 py-0.5 font-mono text-[11px]">
                   ${pkg.binary}
                 </span>
+              )}
+              {pkg.npmUrl ? (
+                <a
+                  href={pkg.npmUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-ink-400 hover:text-signal-400 font-mono text-[11px] transition"
+                >
+                  npm ↗
+                </a>
+              ) : (
+                <span className="text-ink-600 font-mono text-[11px]">not published</span>
               )}
             </div>
             <p className="text-ink-400 mt-2 text-sm leading-relaxed">{pkg.summary}</p>
