@@ -92,6 +92,7 @@ See the [threat model](https://github.com/manik-prakash/farsight/blob/main/docs/
 
 - [`farsight-cli`](https://www.npmjs.com/package/farsight-cli) — the `farsight
   send` command that produces the reference string
+- [farsight-web-dtor.vercel.app](https://farsight-web-dtor.vercel.app) — the project site
 - [Project repository](https://github.com/manik-prakash/farsight)
 
 MIT licensed.

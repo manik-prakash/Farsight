@@ -5,6 +5,9 @@
 [![farsight-core](https://img.shields.io/npm/v/farsight-core?label=farsight-core)](https://www.npmjs.com/package/farsight-core)
 [![license](https://img.shields.io/npm/l/farsight-cli)](LICENSE)
 
+**[farsight-web-dtor.vercel.app](https://farsight-web-dtor.vercel.app)** — what it is, how it
+works, the reference docs, and a demo that encrypts an image in your browser.
+
 **Give a terminal-only or cloud-hosted AI coding agent a way to *see* an
 image, with no SSH tunnel, no shared filesystem, and no server that ever
 sees the plaintext.**

@@ -39,6 +39,8 @@ everywhere else.
 
 ## Documentation
 
+- [farsight-web-dtor.vercel.app](https://farsight-web-dtor.vercel.app) — the project site
+
 - [Relay protocol](https://github.com/manik-prakash/farsight/blob/main/docs/RELAY_PROTOCOL.md)
   — the wire contract `uploadBlob` and `downloadBlob` implement
 - [Threat model](https://github.com/manik-prakash/farsight/blob/main/docs/THREAT_MODEL.md)

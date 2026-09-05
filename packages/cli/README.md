@@ -86,6 +86,7 @@ and [relay protocol](https://github.com/manik-prakash/farsight/blob/main/docs/RE
 
 - [`farsight-mcp`](https://www.npmjs.com/package/farsight-mcp) —
   the other half; runs where the agent lives
+- [farsight-web-dtor.vercel.app](https://farsight-web-dtor.vercel.app) — the project site
 - [Project repository](https://github.com/manik-prakash/farsight)
 
 MIT licensed.
