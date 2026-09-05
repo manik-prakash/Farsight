@@ -33,7 +33,7 @@
     "url": "git+https://github.com/manik-prakash/Farsight.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/manik-prakash/farsight#readme",
+  "homepage": "https://farsight-web-dtor.vercel.app",
   "bugs": "https://github.com/manik-prakash/farsight/issues",
   "keywords": [
     "mcp",
